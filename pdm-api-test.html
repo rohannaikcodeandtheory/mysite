@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DRiV PDM API Test Console — Development Only</title>
+  <link rel="stylesheet" href="/blocks/parts-finder/parts-finder.css">
+  <style>body{font-family:Arial,sans-serif;margin:2rem auto;max-width:920px;padding:0 1rem;color:#222} .notice{background:#f3f5f8;padding:1rem;border-radius:8px} .parts-finder{margin-top:1.5rem} </style>
+</head>
+<body>
+  <h1>DRiV PDM — API Test Console</h1>
+  <p class="notice">Development diagnostic page. Start the Edge Function separately at <code>http://127.0.0.1:7676</code>. Select Local Edge Function below. Cross-origin browser requests require CORS or a same-origin proxy. Never enter an API token here.</p>
+  <div class="parts-finder" id="parts-finder"></div>
+  <script type="module">
+    import decorate from '/blocks/parts-finder/parts-finder.js';
+    decorate(document.getElementById('parts-finder'));
+  </script>
+</body>
+</html>
