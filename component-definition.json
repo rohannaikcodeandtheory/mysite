@@ -1,0 +1,14 @@
+{
+  "groups": [
+    {
+      "title": "DRiV Components",
+      "id": "driv-components",
+      "components": [
+        {
+          "title": "Parts Finder",
+          "id": "parts-finder"
+        }
+      ]
+    }
+  ]
+}
