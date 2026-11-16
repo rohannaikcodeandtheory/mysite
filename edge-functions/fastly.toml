@@ -6,7 +6,6 @@ manifest_version = 3
 service_id = ""
 
 [scripts]
-  build = "npm run build"
   post_init = "npm install"
 
 [local_server]
@@ -15,8 +14,8 @@ service_id = ""
     [local_server.config_stores.config_default]
       format = "inline-toml"
     [local_server.config_stores.config_default.contents]
-      DA_ORG = "codeandtheory"
-      DA_SITE = "citibank"
+      DA_ORG = "rohannaikcodeandtheory"
+      DA_SITE = "mysite"
       ALLOWED_API_HOST = "127.0.0.1"
       IMS_SCOPES = "openid,AdobeID,read_organizations,additional_info.projectedProductContext,aem.frontend.all,read_pc.dma_aem_ams"
 
