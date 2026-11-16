@@ -6,15 +6,16 @@
   "description": "Secure CRUD service for DA-backed EDS sheets on AEM Edge Functions",
   "scripts": {
     "test": "node --test test/*.test.js",
-    "check": "node --check src/index.js && node --check src/handler.js && node --check src/da.js && node --check src/sheet.js && node --check src/ims.js",
+    "check": "node --check src/index.js && node --check src/local-server.js && node --check src/runtime-settings.js && node --check src/handler.js && node --check src/da.js && node --check src/sheet.js && node --check src/ims.js && node --check src/errors.js",
     "build": "aio aem edge-functions build",
     "serve": "aio aem edge-functions serve",
-    "deploy": "aio aem edge-functions deploy eds-sheet-service"
+    "deploy": "aio aem edge-functions deploy eds-sheet-service",
+    "local": "node --env-file=.env src/local-server.js"
   },
   "dependencies": {
     "@fastly/js-compute": "^3.46.0"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.6.0"
   }
 }

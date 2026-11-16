@@ -1,0 +1,25 @@
+kind: "EdgeFunctions"
+version: "1"
+data:
+  functions:
+    - name: eds-sheet-service
+  configs:
+    - key: DA_ORG
+      value: "rohannaikcodeandtheory"
+    - key: DA_SITE
+      value: "mysite"
+    # REPLACE with the custom stage/dev domain onboarded in Cloud Manager.
+    - key: ALLOWED_API_HOST
+      value: "stage.example.com"
+    # REPLACE with the exact scopes assigned to this project's Adobe IMS credential.
+    - key: IMS_SCOPES
+      value: "openid,AdobeID,read_organizations,additional_info.projectedProductContext,aem.frontend.all,read_pc.dma_aem_ams"
+  secrets:
+    # Define these as Secret variables in Cloud Manager's Edge Delivery pipeline.
+    # Do not paste actual values into this file.
+    - key: INBOUND_API_KEY
+      value: "eyJhbGciOiJSUzI1NiIsIng1dSI6Imltc19uYTEta2V5LWF0LTEuY2VyIiwia2lkIjoiaW1zX25hMS1rZXktYXQtMSIsIml0dCI6ImF0In0.eyJpZCI6IjE3OTQ4MTk1NTI4MjFfYjc0MTYyZGMtZTJmMC00YTEzLWI0YTktZWM0MmI0N2U1YTU2X3V3MiIsIm9yZyI6IjZFRDk3NkM5NUNGRkE2ODEwQTQ5NUM3M0BBZG9iZU9yZyIsInR5cGUiOiJhY2Nlc3NfdG9rZW4iLCJjbGllbnRfaWQiOiJkNTZiNjZjZmZlNTk0MmZjOGI2ODNmNDJkNjQ3ZTA2OCIsInVzZXJfaWQiOiJDMERGODhEOTZBRjVFNjFEMEE0OTVGRTZAdGVjaGFjY3QuYWRvYmUuY29tIiwiYXMiOiJpbXMtbmExIiwiYWFfaWQiOiJDMERGODhEOTZBRjVFNjFEMEE0OTVGRTZAdGVjaGFjY3QuYWRvYmUuY29tIiwiY3RwIjozLCJtb2kiOiJlM2Q3NmVmYyIsImV4cGlyZXNfaW4iOiI4NjQwMDAwMCIsInNjb3BlIjoicmVhZF9wYy5kbWFfYWVtX2FtcyxvcGVuaWQsQWRvYmVJRCxyZWFkX29yZ2FuaXphdGlvbnMsYWRkaXRpb25hbF9pbmZvLnByb2plY3RlZFByb2R1Y3RDb250ZXh0IiwiY3JlYXRlZF9hdCI6IjE3OTQ4MTk1NTI4MjEifQ.GamBu8PlznYs5ER3eWO341kBgBBUR2pvgpd4IT_Y1vUr-cAWuSb7bQCB4fDV5PD_Hd6GiZeDQDp_vW6IDwtkdm8w2By-FktpAavEBUOZxhGv5w2nmoSnBS6US-1FW7J7vZTSzSgP07Wr_muNZtNYKHnBSDGkYNOKbNcliZU7jn_LWs05MeHHB1o5RCx4E_Y6FrY8e0Z4hoiPWA85iG9ijpsYOsHfXprlUPdeekKDKAHT0wOFi3mQSshM11bs8bmUgpfASeqn-sbZnN5n7dqXSnmhncYSZsCWXzTU3Q_aSUgSSv4UB4huWOcncFU60BpGEd2p6a1TZ3jtzWKvHFJRGg"
+    - key: IMS_CLIENT_ID
+      value: "d56b66cffe5942fc8b683f42d647e068"
+    - key: IMS_CLIENT_SECRET
+      value: "p8e-VwrbwOuatDKDIZtMT-T6P2jEiz7LnkH2"

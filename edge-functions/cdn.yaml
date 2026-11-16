@@ -1,0 +1,43 @@
+# Restrict both environments to their exact approved domains and paths.
+# Replace stage.example.com and production.example.com before deploying.
+kind: 'CDN'
+version: '1'
+data:
+  originSelectors:
+    rules:
+      - name: stage-eds-sheets-api
+        when:
+          allOf:
+            - { reqProperty: domain, equals: "stage.example.com" }
+            - { reqProperty: path, equals: "/api/eds-sheets" }
+        action:
+          type: selectAemOrigin
+          originName: edgefunction-eds-sheet-service
+          skipCache: true
+      - name: stage-eds-sheets-health
+        when:
+          allOf:
+            - { reqProperty: domain, equals: "stage.example.com" }
+            - { reqProperty: path, equals: "/api/eds-sheets/health" }
+        action:
+          type: selectAemOrigin
+          originName: edgefunction-eds-sheet-service
+          skipCache: true
+      - name: prod-eds-sheets-api
+        when:
+          allOf:
+            - { reqProperty: domain, equals: "production.example.com" }
+            - { reqProperty: path, equals: "/api/eds-sheets" }
+        action:
+          type: selectAemOrigin
+          originName: edgefunction-eds-sheet-service
+          skipCache: true
+      - name: prod-eds-sheets-health
+        when:
+          allOf:
+            - { reqProperty: domain, equals: "production.example.com" }
+            - { reqProperty: path, equals: "/api/eds-sheets/health" }
+        action:
+          type: selectAemOrigin
+          originName: edgefunction-eds-sheet-service
+          skipCache: true

@@ -1,21 +1,28 @@
 {
   "info": {
     "name": "EDS Sheet Service - AEM Edge Functions",
-    "description": "Requires stage domain and Cloud Manager secret; do not commit real tokens.",
+    "description": "Stage/local/production DA Sheet Service; use own inbound API key, never an Adobe IMS token. Configure baseUrl and apiKey per environment.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "baseUrl",
-      "value": "https://stage.example.com"
+      "value": "http://127.0.0.1:7676"
     },
     {
       "key": "apiKey",
-      "value": "REPLACE_USING_POSTMAN_SECRET_VARIABLE",
+      "value": "SET_TO_YOUR_INBOUND_API_KEY",
       "type": "secret"
     }
   ],
   "item": [
+    {
+      "name": "00 - Health",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/eds-sheets/health"
+      }
+    },
     {
       "name": "01 - Dry Run Create",
       "request": {

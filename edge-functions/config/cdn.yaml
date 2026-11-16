@@ -1,9 +1,11 @@
-kind: 'CDN'
-version: '1'
+# CDN route must match the two approved mapped public domains.
+# DO NOT apply placeholders as real domains.
+kind: "CDN"
+version: "1"
 data:
   originSelectors:
     rules:
-      - name: route-eds-sheet-api
+      - name: stage-eds-sheets-api
         when:
           allOf:
             - { reqProperty: domain, equals: "stage.example.com" }
@@ -12,10 +14,28 @@ data:
           type: selectAemOrigin
           originName: edgefunction-eds-sheet-service
           skipCache: true
-      - name: route-eds-sheet-health
+      - name: stage-eds-sheets-health
         when:
           allOf:
             - { reqProperty: domain, equals: "stage.example.com" }
+            - { reqProperty: path, equals: "/api/eds-sheets/health" }
+        action:
+          type: selectAemOrigin
+          originName: edgefunction-eds-sheet-service
+          skipCache: true
+      - name: main-eds-sheets-api
+        when:
+          allOf:
+            - { reqProperty: domain, equals: "production.example.com" }
+            - { reqProperty: path, equals: "/api/eds-sheets" }
+        action:
+          type: selectAemOrigin
+          originName: edgefunction-eds-sheet-service
+          skipCache: true
+      - name: main-eds-sheets-health
+        when:
+          allOf:
+            - { reqProperty: domain, equals: "production.example.com" }
             - { reqProperty: path, equals: "/api/eds-sheets/health" }
         action:
           type: selectAemOrigin

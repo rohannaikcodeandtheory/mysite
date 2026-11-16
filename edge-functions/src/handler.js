@@ -129,12 +129,9 @@ async function execute(payload, da) {
       const existing = await da.read(path);
       if (!existing) fail('NOT_FOUND', 'Source sheet does not exist', 404);
       if (await da.read(destinationPath)) fail('ALREADY_EXISTS', 'Destination sheet already exists', 409);
-      await da.write(destinationPath, existing);
-      try { await da.remove(path); } catch {
-        fail('MOVE_PARTIAL', 'Destination was written, but source deletion failed. Reconcile both paths manually.', 502,
-          { sourcePath: path, destinationPath });
-      }
-      return { success: true, operation, path, destinationPath, message: 'Copied to destination and removed source' };
+      const result = await da.move(path, destinationPath);
+      return { success: true, operation, path, destinationPath, da: result.payload,
+        message: 'DA Move API completed' };
     }
     default:
       throw new AppError('INVALID_OPERATION', 'Unsupported operation');

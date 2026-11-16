@@ -10,7 +10,18 @@ function fixture(initial = {}) {
     if (url.includes('/ims/token/v3')) {
       return new Response(JSON.stringify({ access_token: 'fake-ims-access-token', expires_in: 3600 }), { status: 200 });
     }
-    const path = url.split('/source/codeandtheory/citibank/')[1];
+    if (url.includes('/move/rohannaikcodeandtheory/mysite/')) {
+      if (options.headers?.Authorization !== 'Bearer fake-ims-access-token') {
+        return new Response('not authorized', { status: 401 });
+      }
+      const source = url.split('/move/rohannaikcodeandtheory/mysite/')[1];
+      const destination = options.body.get('destination').replace(/^\//, '');
+      if (!storage.has(source) || storage.has(destination)) return new Response('bad move', { status: 409 });
+      storage.set(destination, storage.get(source));
+      storage.delete(source);
+      return new Response(null, { status: 204 });
+    }
+    const path = url.split('/source/rohannaikcodeandtheory/mysite/')[1];
     if (options.headers?.Authorization !== 'Bearer fake-ims-access-token') {
       return new Response('not authorized', { status: 401 });
     }
@@ -34,7 +45,7 @@ function fixture(initial = {}) {
   const handle = createHandler({
     getSecret: async (key) => ({ INBOUND_API_KEY: 'a'.repeat(40), IMS_CLIENT_ID: 'client', IMS_CLIENT_SECRET: 'secret' })[key],
     fetcher,
-    settings: { org: 'codeandtheory', site: 'citibank', scopes: 'openid,AdobeID', allowedHost: 'stage.example.com' },
+    settings: { org: 'rohannaikcodeandtheory', site: 'mysite', scopes: 'openid,AdobeID', allowedHost: 'stage.example.com' },
   });
   const invoke = async (payload, { key = 'a'.repeat(40), url = 'https://stage.example.com/api/eds-sheets' } = {}) => {
     const response = await handle(new Request(url, {
@@ -92,6 +103,7 @@ test('moves sheet without changing rows', async () => {
   assert.equal(res.status, 200);
   assert.equal(f.storage.has('data/source.json'), false);
   assert.deepEqual(f.storage.get('data/dest.json'), initial);
+  assert.equal(f.calls.filter(c => c.url.includes('/move/')).length, 1);
 });
 
 test('rejects wrong hostname and invalid file paths', async () => {

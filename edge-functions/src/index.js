@@ -1,94 +1,59 @@
-
 /// <reference types="@fastly/js-compute" />
-
 import { ConfigStore } from 'fastly:config-store';
 import { SecretStore } from 'fastly:secret-store';
 import { createHandler } from './handler.js';
+import { selectEnvironment } from './runtime-settings.js';
 
-/**
- * Handles incoming requests.
- *
- * IMPORTANT:
- * ConfigStore and SecretStore must be initialized
- * inside request handling, not at module level.
- */
+// Durable within a WARM isolate only. Never assume shared/global cache across edge POPs.
+// Reusing the handler also reuses its IMS token cache across incoming requests.
+const handlers = new Map();
+let config;
+let secrets;
+
 async function handleRequest(request) {
   try {
-    // Initialize stores during request processing.
-    const config = new ConfigStore('config_default');
-    const secrets = new SecretStore('secret_default');
+    config ||= new ConfigStore('config_default');
+    secrets ||= new SecretStore('secret_default');
+    const stageHost = config.get('STAGE_API_HOST') || '';
+    const mainHost = config.get('MAIN_API_HOST') || '';
+    const env = selectEnvironment(new URL(request.url).hostname, { stageHost, mainHost });
 
-    // Cache the bundled secrets lookup for this request.
-    let secretBundlePromise;
-
-    async function getSecret(key) {
-      if (!secretBundlePromise) {
-        secretBundlePromise = (async () => {
-          try {
-            const entry = await secrets.get('secrets');
-
-            if (!entry) return null;
-
-            const value = JSON.parse(entry.plaintext());
-
-            return value && typeof value === 'object'
-              ? value
-              : null;
-          } catch {
-            return null;
-          }
-        })();
+    if (!handlers.has(env)) {
+      async function getSecret(key) {
+        try {
+          const entry = await secrets.get(`${key}_${env}`);
+          return entry ? entry.plaintext() : null;
+        } catch {
+          return null;
+        }
       }
-
-      const bundle = await secretBundlePromise;
-
-      if (bundle && typeof bundle[key] === 'string') {
-        return bundle[key];
-      }
-
-      try {
-        const entry = await secrets.get(key);
-        return entry ? entry.plaintext() : null;
-      } catch {
-        return null;
-      }
+      const handle = createHandler({
+        getSecret,
+        // Adobe/Fastly permits fetching these public Adobe endpoints server-side.
+        fetcher: fetch,
+        settings: {
+          org: config.get(`DA_ORG_${env}`) || '',
+          site: config.get(`DA_SITE_${env}`) || '',
+          scopes: config.get(`IMS_SCOPES_${env}`) || '',
+          allowedHost: env === 'STAGE' ? stageHost : mainHost,
+        },
+      });
+      handlers.set(env, handle);
     }
-
-    // Existing business logic remains unchanged.
-    const handle = createHandler({
-      getSecret,
-      fetcher: fetch,
-      settings: {
-        org: config.get('DA_ORG') || '',
-        site: config.get('DA_SITE') || '',
-        scopes: config.get('IMS_SCOPES') || '',
-        allowedHost: config.get('ALLOWED_API_HOST') || '',
+    return await handlers.get(env)(request);
+  } catch (error) {
+    const isHost = error?.code === 'HOST_NOT_ALLOWED';
+    return new Response(JSON.stringify({
+      success: false,
+      error: {
+        code: isHost ? 'HOST_NOT_ALLOWED' : 'EDGE_FUNCTION_UNAVAILABLE',
+        message: isHost ? 'This hostname is not enabled' : 'Edge Function configuration unavailable',
       },
+    }), {
+      status: isHost ? 403 : 503,
+      headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
     });
-
-    return await handle(request);
-  } catch {
-    // Do not expose secrets or internal errors.
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: {
-          code: 'EDGE_FUNCTION_UNAVAILABLE',
-          message: 'Edge Function configuration unavailable',
-        },
-      }),
-      {
-        status: 503,
-        headers: {
-          'content-type': 'application/json',
-          'cache-control': 'no-store',
-        },
-      },
-    );
   }
 }
 
-// Register the Fastly Compute request handler.
-addEventListener('fetch', (event) => {
-  event.respondWith(handleRequest(event.request));
-});
+addEventListener('fetch', (event) => event.respondWith(handleRequest(event.request)));

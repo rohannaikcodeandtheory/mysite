@@ -1,25 +1,38 @@
+# Cloud Manager EDS SHARED config pipeline (STAGE and MAIN).
+# Define all ${...} secret references as Cloud Manager SECRET variables first.
+# Do NOT place bearer tokens, client secrets, or real API keys here.
 kind: "EdgeFunctions"
 version: "1"
 data:
   functions:
     - name: eds-sheet-service
   configs:
-    - key: DA_ORG
-      value: "codeandtheory"
-    - key: DA_SITE
-      value: "citibank"
-    # REPLACE with the custom stage/dev domain onboarded in Cloud Manager.
-    - key: ALLOWED_API_HOST
-      value: "stage.example.com"
-    # REPLACE with the exact scopes assigned to this project's Adobe IMS credential.
-    - key: IMS_SCOPES
-      value: "openid,AdobeID,read_organizations,additional_info.projectedProductContext,aem.frontend.all,read_pc.dma_aem_ams"
+    - key: STAGE_API_HOST
+      value: "stage.example.com" # REPLACE exact stage domain
+    - key: MAIN_API_HOST
+      value: "production.example.com" # REPLACE exact live domain
+    - key: DA_ORG_STAGE
+      value: "rohannaikcodeandtheory"
+    - key: DA_SITE_STAGE
+      value: "mysite"
+    - key: DA_ORG_MAIN
+      value: "rohannaikcodeandtheory" # verify production repository
+    - key: DA_SITE_MAIN
+      value: "mysite" # verify production site
+    - key: IMS_SCOPES_STAGE
+      value: "oopenid,AdobeID,read_organizations,additional_info.projectedProductContext,read_pc.dma_aem_ams"
+    - key: IMS_SCOPES_MAIN
+      value: "oopenid,AdobeID,read_organizations,additional_info.projectedProductContext,read_pc.dma_aem_ams"
   secrets:
-    # Define these as Secret variables in Cloud Manager's Edge Delivery pipeline.
-    # Do not paste actual values into this file.
-    - key: INBOUND_API_KEY
-      value: ${{CITI_STAGE_EDS_API_KEY}}
-    - key: IMS_CLIENT_ID
-      value: ${{CITI_STAGE_IMS_CLIENT_ID}}
-    - key: IMS_CLIENT_SECRET
-      value: ${{CITI_STAGE_IMS_CLIENT_SECRET}}
+    - key: INBOUND_API_KEY_STAGE
+      value: ${{MYSITE_STAGE_INBOUND_API_KEY}}
+    - key: IMS_CLIENT_ID_STAGE
+      value: ${{MYSITE_STAGE_IMS_CLIENT_ID}}
+    - key: IMS_CLIENT_SECRET_STAGE
+      value: ${{MYSITE_STAGE_IMS_CLIENT_SECRET}}
+    - key: INBOUND_API_KEY_MAIN
+      value: ${{MYSITE_MAIN_INBOUND_API_KEY}}
+    - key: IMS_CLIENT_ID_MAIN
+      value: ${{MYSITE_MAIN_IMS_CLIENT_ID}}
+    - key: IMS_CLIENT_SECRET_MAIN
+      value: ${{MYSITE_MAIN_IMS_CLIENT_SECRET}}
