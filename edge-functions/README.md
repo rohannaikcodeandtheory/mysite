@@ -1,91 +1,341 @@
-# NEW: Raw action events with automatic `language/brandName` routing
+# AEM Edge Functions — DA EDS Sheet Service
 
-See **[RAW-ACTION-INTEGRATION.md](RAW-ACTION-INTEGRATION.md)** and the new `postman/DA-Raw-Asset-Events.postman_collection.json`. The full nested payload can be sent directly with `action`. Brand sheets are written to `data/{language}/{brandName}.json`; existing `operation` format still works. **Multi-instance concurrent writes are not safe without external serialization.**
+**Environments:** Local → Stage → Production  
+**Repository:** [mysite / edge-functions](https://github.com/rohannaikcodeandtheory/mysite/tree/main/edge-functions)
 
----
+This service receives authenticated API requests, obtains an Adobe IMS OAuth Server-to-Server access token, and reads or writes JSON sheets in Adobe Document Authoring (DA). It supports both explicit sheet operations and raw asset events routed automatically by language and brand.
 
-# DA EDS Sheet Service — Local + Stage + Production
+> **Production release gate:** Verify the *technical account* can perform both DA GET and a disposable DA POST in the intended repository. A successful LIST/GET alone proves only read access. Do not deploy a concurrent event feed without durable per-sheet serialization and idempotency.
 
-**Architecture:** Postman/service → protected AEM Edge Function → Adobe IMS client_credentials → DA Source / Move API → JSON sheet.
+## 1. Architecture
 
-**Production gate:** The S2S credential must pass **DA GET and disposable POST** with its technical-account identity. A DA `list` 200 demonstrates READ only. No browser-session token is used by the runtime.
+```text
+Postman / trusted backend
+    │ POST /api/eds-sheets
+    │ x-api-key: <INBOUND_API_KEY>
+    ▼
+AEM Edge Function (or local Node adapter)
+    │ validates inbound API key, payload and route
+    │ obtains/caches IMS OAuth client_credentials token
+    ▼
+Adobe DA Source / Move API
+    ▼
+DA repository: data/{language}/{brandName}.json
+```
 
-## What's changed in this deliverable
+The caller's `x-api-key` is an **inbound service key**, not an IMS bearer token. The runtime selects its own configured DA repository and IMS credentials; clients must not supply them in request bodies. Do not embed secrets in public EDS frontend JavaScript.
 
-- Removed the unsafe duplicate root `edgeFunctions.yaml` which contained an actual bearer token, Client ID and Client Secret. Removed uploaded `.env`, build artifacts, dependencies, and macOS metadata.
-- Local Node adapter reads `.env` including `INBOUND_API_KEY` (previous sample omitted this, causing 503/401 issues).
-- EDS shared config pipeline distinguishes STAGE and MAIN domains, DA repositories and secret stores; incoming request cannot select its credentials.
-- Warm Edge runtime reuses a handler + cached IMS token rather than generating a token for every API request.
-- DA `moveSheet` now invokes Adobe's `/move` API rather than copy then delete. GET failures with 401 invalidate token cache; only GET may retry once, writes are never blindly replayed.
-- Retains existing explicit `operation` API contract and nested-sheet flattening. `updateSheet` REPLACES the entire sheet rather than one row. Top-level `action` is excluded from stored sheet columns.
+## 2. Prerequisites
 
-## Rotate secrets BEFORE using this ZIP
+- Node.js **20.6+** and npm; Git.
+- Access to the Adobe Developer Console project with an **OAuth Server-to-Server** credential and the exact scopes assigned to it.
+- DA repository organization/site and technical-account permissions for the target `data/` subtree.
+- For Stage/Production: an eligible Cloud Manager Edge Delivery program with Edge Functions onboarding, a configuration pipeline, mapped public domains, and managed secret/config stores.
+- Adobe I/O CLI and the Edge Functions plugin for hosted deployments.
 
-The ORIGINAL uploaded ZIP included actual sensitive data in `edgeFunctions.yaml` and `.env`. Rotate your exposed OAuth Client Secret and any active inbound API key, and remove the old values from repository history, CI logs, and shared artifacts if applicable. The new ZIP intentionally contains NO real credentials. Never use an IMS bearer token as `x-api-key`.
+**Important:** Adobe Sandbox Edge Functions may not provision the required Config Store / Secret Store. Use the local Node adapter for real IMS→DA testing and a provisioned non-Sandbox Stage environment for hosted authenticated writes. Do not work around missing stores by hardcoding secrets.
 
-## A. Local Node runtime — real IMS + DA
+## 3. Initial setup
 
-1. Install Node.js >=20.6. `cd edge-functions`.
-2. Run `cp .env.example .env`.
-3. Edit `.env`: `IMS_CLIENT_ID`, `IMS_CLIENT_SECRET`, `IMS_SCOPES` from the EDS API card; `DA_ORG`, `DA_SITE`; generate NEW `INBOUND_API_KEY` with `openssl rand -hex 32`; keep file private.
-4. Confirm the Technical Account Email is granted DA permissions to `/mysite/data/+**` (and the folder exists). A successful `list` GET does not confirm writes.
-5. Run `npm test` and `npm run check`.
-6. Run `node --env-file=.env scripts/preflight.mjs` on an existing file path. The script is read-only; it checks DA repository LIST (200 expected) and optionally attempts the test sheet. A 404 for the optional sheet does not block the LIST test.
-7. Run `npm run local`. Server binds to `127.0.0.1:7676` only. Set Postman variables `baseUrl=http://127.0.0.1:7676`, `apiKey=<INBOUND_API_KEY>`.
-8. Use Postman collection requests in order: `01 Dry Run`, `02 Create Folder` (only if needed), `03 Create Sheet`, `04 Get`, `05 Update`, `06 Move`, `07 Delete`. NEVER test writes on business content before confirming on `data/testing/`.
-9. A dry run does no IMS or DA calls. Turn `dryRun` off to test real DA. `deleteSheet` and `moveSheet` require `confirm: true`.
+From the repository root:
 
-Optional Fastly simulator: `npm install` then `npm run serve`. This is **dry-run only**, because `fastly.toml` uses fake local secrets. Adobe sandbox deployments don't provision secret stores; use the Node adapter for real authentication tests and a provisioned Stage environment for actual edge-runtime validation.
+```bash
+cd edge-functions
+npm ci
+cp .env.example .env
+```
 
-## B. Adobe Cloud Manager — EDS Stage and Production
+Generate a **new** inbound key:
 
-1. Confirm the Edge Functions project and EDS sites are onboarded to Cloud Manager, with a config pipeline. Install `aio`: `npm install -g @adobe/aio-cli`; `aio plugins install @adobe/aio-cli-plugin-aem-edge-functions`; `aio login`; `aio aem edge-functions setup`.
-2. Edit **only** `config/edgeFunctions.yaml`: replace `STAGE_API_HOST`, `MAIN_API_HOST` with your actual mapped public domains; verify `DA_ORG_STAGE`, `DA_SITE_STAGE`, `DA_ORG_MAIN`, `DA_SITE_MAIN`; set each `IMS_SCOPES_*` to the **actual scopes granted by its OAuth credential**.
-3. Make identical hostname replacements in `config/cdn.yaml`. Keep `originName: edgefunction-eds-sheet-service` matching function `eds-sheet-service`.
-4. In Cloud Manager → Program → Edge Delivery → Pipelines → View/Edit variables, create all SIX listed secret variables **as Secret** (not plaintext config): `MYSITE_STAGE_INBOUND_API_KEY`, `MYSITE_STAGE_IMS_CLIENT_ID`, `MYSITE_STAGE_IMS_CLIENT_SECRET`, `MYSITE_MAIN_INBOUND_API_KEY`, `MYSITE_MAIN_IMS_CLIENT_ID`, `MYSITE_MAIN_IMS_CLIENT_SECRET`. Stage and Main must have different inbound keys and preferably distinct technical-account credentials, both authorized to their target DA repositories. The Client ID is treated as a secret here for consistency and rotation.
-5. Add config files in your Cloud Manager configuration repository under `config/`, not the Edge Functions source project unless those are the SAME repository/pipeline source. Keep the Edge Functions source in its code repository. Deploy the **configuration pipeline first**, after review and explicit approval.
-6. Deploy the function code from the matching source branch: `npm install`, `aio aem edge-functions build`, `aio aem edge-functions deploy eds-sheet-service` (run setup/login first).
-7. Stage smoke tests using the real stage domain: `GET https://<stage-domain>/api/eds-sheets/health`; POST dry-run; `createFolder`, `createSheet`, `getSheet`, `updateSheet`, `moveSheet`, `deleteSheet` under `data/testing/` only.
-8. Only after Stage success and a separate production credentials/DA permission review should you promote or deploy to Main and run a disposable smoke test there.
-9. Configure CDN/WAF IP allowlist, request rate limits and monitoring according to your organization's standards; the API key must never be included in a public website or frontend code.
+```bash
+openssl rand -hex 32
+```
 
-NOTE: If one Cloud Manager config pipeline serves multiple EDS sites, the variables are shared. Keep the above site-specific prefix and validate exact domain-to-credential mapping. The code selects MAIN/STAGE by EXACT domain from `request.url`. Validate hostname/routing in Stage before relying on it.
+Populate `.env` privately with the variables supported by `.env.example`:
 
-## C. Postman contract
+```dotenv
+IMS_CLIENT_ID=<oauth-server-to-server-client-id>
+IMS_CLIENT_SECRET=<oauth-server-to-server-client-secret>
+IMS_SCOPES=<exact-comma-separated-scopes-granted-to-credential>
+DA_ORG=<da-organization>
+DA_SITE=<da-site>
+INBOUND_API_KEY=<new-random-key>
+```
 
-Request: `POST {{baseUrl}}/api/eds-sheets`, Header `Content-Type: application/json`, Header `x-api-key: {{apiKey}}`, Authorization tab **No Auth**. `{{apiKey}}` is your own inbound API key, NOT an IMS token. Import `postman/EDS-Sheet-Service.postman_collection.json`.
+Never commit `.env`, bearer tokens, Client Secrets or inbound keys. Rotate any credentials previously included in Git history, ZIP files, logs or shared artifacts. Grant the technical-account identity the required DA permissions for the target repository; verify the exact access rules with the DA administrator.
 
-Example:
+## 4. Local development and testing
+
+### 4.1 Start the local API
+
+For subsequent runs, after `.env` is configured:
+
+```bash
+cd edge-functions
+npm ci
+npm test
+npm run check
+npm run local
+```
+
+The Node adapter listens on **http://127.0.0.1:7676** (loopback only). The commands correspond to scripts in `package.json`: tests, syntax checks, and `node --env-file=.env src/local-server.js`.
+
+### 4.2 Preflight authentication
+
+Before performing writes:
+
+```bash
+node --env-file=.env scripts/preflight.mjs
+```
+
+This checks IMS and DA read access. An optional missing test sheet may return 404. **Read-only preflight does not confirm POST permission**; verify writing separately with disposable data.
+
+### 4.3 Configure Postman
+
+Import the committed [DA Asset Events — language / brandName collection](postman/DA%20Asset%20Events%20-%20language%20-%20brandName.postman_collection.json).
+
+Set collection variables:
+
+| Variable | Local value |
+|---|---|
+| `baseUrl` | `http://127.0.0.1:7676` |
+| `apiKey` | Your local `INBOUND_API_KEY` |
+
+For POST requests, select **Authorization → No Auth** and set:
+
+```http
+Content-Type: application/json
+x-api-key: {{apiKey}}
+```
+
+Check `00 - Health`, then run raw-event create/update/move/delete requests with **disposable** test assets and brand names. For a dry run, add `"dryRun": true` to a request; it validates without making IMS or DA calls. Remove it or set it to `false` to test a real DA write. Never test destructive actions on business data.
+
+### 4.4 Optional local Edge simulator
+
+```bash
+npm run serve
+```
+
+The provided `fastly.toml` uses placeholder local secrets, so treat this simulator as **dry-run only**. For real IMS/DA authentication locally, use `npm run local`.
+
+## 5. Supported API requests
+
+### 5.1 Raw asset events (recommended for asset feeds)
+
+```http
+POST {{baseUrl}}/api/eds-sheets
+Content-Type: application/json
+x-api-key: {{apiKey}}
+```
+
+Example body:
+
+```json
+{
+  "assetID": "TEST-001",
+  "action": "created",
+  "netChange": false,
+  "createdDate": "2026-11-13T05:30:00.000Z",
+  "partNumbers": [
+    {"operation": "A", "partNumber": "410899", "squashedPartNumber": "410899"},
+    {"operation": "B", "partNumber": "410899", "squashedPartNumber": "410899"}
+  ],
+  "metadata": {
+    "language": "de_DE",
+    "brandName": "TestBrand",
+    "resourceRegion": "NA",
+    "title": "Test installation diagram"
+  }
+}
+```
+
+The target sheet is automatically derived as `data/de_DE/TestBrand.json`. The service creates the language folder and brand sheet if needed, then appends the new `assetID` row. All supplied nested metadata is flattened into sheet columns; `partNumbers` is stored as a JSON string in one cell. The top-level `action`, `dryRun` and routing-only `previousLocation` are not stored as sheet columns.
+
+| Raw `action` | Result |
+|---|---|
+| `create` / `created` | Append a new asset; identical repeat unchanged; changed duplicate → 409 |
+| `updated` | Replace the matching `assetID` row; missing row → 404 |
+| `deleted` | Remove the matching row; absent row → unchanged |
+| `moved` | Move one asset row from `previousLocation` to the new metadata route |
+
+For `moved`, supply:
+
+```json
+{
+  "assetID": "TEST-001",
+  "action": "moved",
+  "previousLocation": {"language": "de_DE", "brandName": "TestBrand"},
+  "metadata": {"language": "fr_FR", "brandName": "NewTestBrand"}
+}
+```
+
+A raw `moved` event transfers **one row** between brand sheets; it is not the same as the explicit `moveSheet` operation, which moves a whole file. Cross-sheet moves are **not atomic**; a `PARTIAL_MOVE` error requires reconciliation, not blind retry.
+
+Routing segments currently allow only ASCII letters, digits, `_` and `-`, with a maximum length of 80. Case is preserved. The service limits input/generated JSON to 256 KiB, sheets to 1,000 rows, and flattened columns to 200.
+
+Full contract: [RAW-ACTION-INTEGRATION.md](RAW-ACTION-INTEGRATION.md).
+
+### 5.2 Explicit sheet operations (backward compatible)
 
 ```json
 {
   "operation": "createSheet",
-  "path": "data/testing/my-first-sheet.json",
+  "path": "data/testing/example.json",
   "dryRun": true,
-  "sheetData": [{"assetID":"TEST-001","action":"created","netChange":false,
-                 "partNumbers":[{"operation":"A","partNumber":"410899"}]}]
+  "sheetData": [{"assetID": "TEST-001", "netChange": false}]
 }
 ```
 
-Supported operations: `createFolder` (folder path like `data/testing`), `createSheet`, `getSheet`, `updateSheet` (whole-file replace), `moveSheet` (DA Move API, `destinationPath` and `confirm: true`), `deleteSheet` (`confirm: true`). Only `.json` under `data/` is allowed. Limit: 256 KiB inbound, 1000 rows, 200 flattened columns.
+Supported operations:
 
-IMPORTANT: Raw event-level `action` (`create`, `updated`, `deleted`, `moved` (`created` is accepted as an alias)) is supported with `metadata.language` and `metadata.brandName` to derive a brand-sheet path. See `RAW-ACTION-INTEGRATION.md`. Multiple edge instances require a durable per-sheet queue to prevent lost updates. Add a separate, idempotent event handler before connecting production bulk feeds.
-
-## D. Status/errors
-
-| Code | What to do |
+| Operation | Behavior |
 |---|---|
-| `401 UNAUTHORIZED` | Enable `x-api-key`, match selected environment's inbound key |
-| `503 INBOUND_AUTH_NOT_CONFIGURED` | Secret missing or shorter than 32 chars |
-| `502 IMS_TOKEN_FAILED` | Check Client ID/Secret pair and credential scopes |
-| `502 DA_AUTH_FAILED` | S2S identity lacks DA permission or token rejected |
-| `502 DA_REQUEST_FAILED` | Check DA path, write permission, folder or API status |
-| `409 ALREADY_EXISTS` | Use updateSheet; do not overwrite accidentally |
-| `403 HOST_NOT_ALLOWED` | Correct exact hostname mapping / CDN origin selectors |
+| `createFolder` | Create a folder such as `data/testing` |
+| `createSheet` | Create a new `.json` sheet |
+| `getSheet` | Read a sheet |
+| `updateSheet` | **Replace the entire sheet**, not just one row |
+| `moveSheet` | Move the entire file using the DA Move API; requires `destinationPath` and `confirm: true` |
+| `deleteSheet` | Delete the sheet; requires `confirm: true` |
 
-## Official references
+Only permitted `.json` paths beneath `data/` are supported for sheets. Avoid accidental replacement or deletion of existing data.
 
-- DA Source API: https://docs.da.live/developers/api/source
-- DA Move API: https://docs.da.live/developers/api/move
-- Adobe EDS secrets: https://experienceleague.adobe.com/en/docs/experience-manager-learn/cloud-service/edge-functions/edge-functions-how-to/configs-and-secrets
-- Adobe AEM Edge Functions: https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/developing/edge-functions
+## 6. Stage environment — Cloud Manager
+
+### 6.1 Install and configure Adobe CLI
+
+```bash
+npm install -g @adobe/aio-cli
+aio plugins install @adobe/aio-cli-plugin-aem-edge-functions
+aio login
+aio aem edge-functions setup
+```
+
+Select the correct Adobe organization, program and Edge Delivery site. Confirm that the target program supports the managed stores used by this service.
+
+### 6.2 Configure Stage routing and credentials
+
+In the **Cloud Manager configuration repository**, configure `config/edgeFunctions.yaml` and `config/cdn.yaml`. If the configuration repository and Edge Functions code repository differ, commit the config files to the **configuration pipeline's source repository**, not just the function source repo.
+
+- Replace `STAGE_API_HOST` with the actual mapped Stage hostname in both configuration files.
+- Verify `DA_ORG_STAGE`, `DA_SITE_STAGE`, and `IMS_SCOPES_STAGE` match the Stage DA repository and OAuth credential.
+- Preserve the expected origin/function mapping: `originName: edgefunction-eds-sheet-service` and function `eds-sheet-service`.
+- Confirm the Stage hostname is exactly mapped by the CDN and runtime; incoming bodies must not select credentials.
+
+Create these **Secret** pipeline variables for Stage (not plaintext configuration):
+
+```text
+MYSITE_STAGE_INBOUND_API_KEY
+MYSITE_STAGE_IMS_CLIENT_ID
+MYSITE_STAGE_IMS_CLIENT_SECRET
+```
+
+Generate a distinct Stage inbound key. Use only credentials authorized to the Stage DA repository.
+
+### 6.3 Deploy Stage
+
+1. Review and run the **configuration pipeline first**.
+2. Confirm its configuration and secrets are active.
+3. From the matching Edge Functions source branch, run:
+
+```bash
+cd edge-functions
+npm ci
+npm test
+npm run check
+aio aem edge-functions build
+aio aem edge-functions deploy eds-sheet-service
+```
+
+Deployment syntax and permissions depend on the installed Adobe CLI/plugin and program configuration. Check `aio aem edge-functions --help` if a command differs in your installed version.
+
+### 6.4 Stage smoke tests
+
+Set Postman `baseUrl` to `https://<actual-stage-domain>` and `apiKey` to the Stage inbound key. Check:
+
+1. `GET /api/eds-sheets/health`.
+2. POST with `dryRun: true`.
+3. Create a disposable sheet under `data/testing/` or a dedicated test brand.
+4. Read, update, move, and delete only that disposable test content.
+5. Verify the result in the **Stage** DA repository and check logs without exposing secrets.
+
+Do not promote if Stage DA POST fails or the technical-account identity lacks the intended permissions.
+
+## 7. Production (Main) environment
+
+Production must have **separate credentials and an explicit approval/review gate**. Do not reuse the Stage inbound API key.
+
+### 7.1 Configure Main
+
+- Replace `MAIN_API_HOST` with the actual mapped production hostname in `config/edgeFunctions.yaml` and `config/cdn.yaml`.
+- Verify `DA_ORG_MAIN`, `DA_SITE_MAIN`, and `IMS_SCOPES_MAIN`.
+- Create these **Secret** pipeline variables:
+
+```text
+MYSITE_MAIN_INBOUND_API_KEY
+MYSITE_MAIN_IMS_CLIENT_ID
+MYSITE_MAIN_IMS_CLIENT_SECRET
+```
+
+Use separate technical-account credentials where possible, authorized only for the intended production repository. Confirm exact hostname-to-environment mapping; a shared configuration pipeline may expose variables to multiple sites, so verify selectors carefully.
+
+### 7.2 Release procedure
+
+1. Review code, configuration, secrets, permissions and security controls.
+2. Confirm Stage tests and a disposable DA **GET + POST** passed with its S2S identity.
+3. Validate the **production** S2S identity's DA GET and disposable POST permissions before enabling real traffic.
+4. Obtain production approval and run the production configuration pipeline.
+5. Build/deploy the approved function revision to the intended Main environment using the configured Adobe CLI workflow.
+6. Test `GET https://<production-domain>/api/eds-sheets/health`, dry run, then one **disposable** production write/read/delete test.
+7. Enable trusted callers gradually, monitor error rates and keep a rollback/reconciliation plan.
+
+Never store an IMS bearer token as a Cloud Manager secret in place of a Client ID/Secret pair. Runtime IMS tokens are generated automatically and cached in warm instances.
+
+## 8. Production safety checklist
+
+- [ ] Exposed Client Secrets and inbound API keys have been rotated and removed from shared artifacts/history where applicable.
+- [ ] `.env`, tokens and build artifacts are excluded from Git.
+- [ ] Stage and Main use distinct inbound keys and correctly scoped S2S identities.
+- [ ] DA GET **and** disposable POST work for each target technical account.
+- [ ] Hostname, CDN origin and secret-store mappings are verified.
+- [ ] Endpoint access is restricted with CDN/WAF allowlists, rate limiting and monitoring.
+- [ ] No secrets are present in public frontend code or request payloads.
+- [ ] Durable **per-sheet serialization** and idempotent event handling are implemented before concurrent production ingestion.
+- [ ] Partial moves, retries and duplicate events have a documented reconciliation procedure.
+- [ ] Backup/rollback and disposable smoke tests are approved.
+
+**Concurrency warning:** DA writes persist the entire sheet. Raw events use read-modify-write, and the in-memory queue only protects one warm instance. Multiple Edge instances can overwrite each other's updates. Do **not** treat this service alone as a concurrency-safe bulk ingestion pipeline; use a durable per-sheet queue or transactional intermediary.
+
+## 9. Troubleshooting
+
+| Error | Likely cause / next action |
+|---|---|
+| `401 UNAUTHORIZED` | Wrong/missing `x-api-key`; verify the selected environment's inbound key |
+| `503 INBOUND_AUTH_NOT_CONFIGURED` | Inbound key secret missing or too short |
+| `502 IMS_TOKEN_FAILED` | Invalid Client ID/Secret pair or unsupported scopes |
+| `502 DA_AUTH_FAILED` | S2S identity rejected or missing DA permission |
+| `502 DA_REQUEST_FAILED` | Invalid DA path, missing folder, write permission or DA API failure |
+| `409 ALREADY_EXISTS` | Explicit create target exists; avoid accidental overwrite |
+| `403 HOST_NOT_ALLOWED` | Request hostname does not match configured environment mapping |
+| `INVALID_ASSET_ROUTE` | Invalid `language` or `brandName` segment |
+| `PARTIAL_MOVE` | Destination/source updates diverged; reconcile manually before retry |
+| `fastly: command not found` | Fastly CLI not installed; use `npm run local` for real local IMS/DA tests |
+
+## 10. Reference files and official documentation
+
+**Repository files:**
+
+- [Raw action integration guide](RAW-ACTION-INTEGRATION.md)
+- [Postman raw asset events collection](postman/DA%20Asset%20Events%20-%20language%20-%20brandName.postman_collection.json)
+- [Production checklist](PRODUCTION-CHECKLIST.md)
+- [`package.json`](package.json)
+
+**Adobe documentation:**
+
+- [DA Source API](https://docs.da.live/developers/api/source)
+- [DA Move API](https://docs.da.live/developers/api/move)
+- [Edge Functions overview](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/developing/edge-functions)
+- [Edge Functions configurations and secrets](https://experienceleague.adobe.com/en/docs/experience-manager-learn/cloud-service/edge-functions/edge-functions-how-to/configs-and-secrets)
+
+---
+
+**Suggested testing order:** Local tests → local disposable DA write → Stage deployment and smoke test → production credential review → approved Main deployment → disposable production smoke test → controlled rollout.
