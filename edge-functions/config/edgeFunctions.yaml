@@ -1,0 +1,25 @@
+kind: "EdgeFunctions"
+version: "1"
+data:
+  functions:
+    - name: eds-sheet-service
+  configs:
+    - key: DA_ORG
+      value: "codeandtheory"
+    - key: DA_SITE
+      value: "citibank"
+    # REPLACE with the custom stage/dev domain onboarded in Cloud Manager.
+    - key: ALLOWED_API_HOST
+      value: "stage.example.com"
+    # REPLACE with the exact scopes assigned to this project's Adobe IMS credential.
+    - key: IMS_SCOPES
+      value: "openid,AdobeID,read_organizations,additional_info.projectedProductContext,aem.frontend.all,read_pc.dma_aem_ams"
+  secrets:
+    # Define these as Secret variables in Cloud Manager's Edge Delivery pipeline.
+    # Do not paste actual values into this file.
+    - key: INBOUND_API_KEY
+      value: ${{CITI_STAGE_EDS_API_KEY}}
+    - key: IMS_CLIENT_ID
+      value: ${{CITI_STAGE_IMS_CLIENT_ID}}
+    - key: IMS_CLIENT_SECRET
+      value: ${{CITI_STAGE_IMS_CLIENT_SECRET}}

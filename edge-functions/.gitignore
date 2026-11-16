@@ -1,0 +1,10 @@
+node_modules/
+.aio
+.env
+.env.*
+!.env.example
+.hlx/
+*.log
+.DS_Store
+bin/
+.build/

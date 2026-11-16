@@ -1,0 +1,32 @@
+name = "eds-sheet-edge-function"
+description = "AEM Edge Functions EDS sheet writer"
+authors = []
+language = "javascript"
+manifest_version = 3
+service_id = ""
+
+[scripts]
+  build = "npm run build"
+  post_init = "npm install"
+
+[local_server]
+  # Only local development defaults. NEVER put production secrets here.
+  [local_server.config_stores]
+    [local_server.config_stores.config_default]
+      format = "inline-toml"
+    [local_server.config_stores.config_default.contents]
+      DA_ORG = "codeandtheory"
+      DA_SITE = "citibank"
+      ALLOWED_API_HOST = "127.0.0.1"
+      IMS_SCOPES = "openid,AdobeID,read_organizations,additional_info.projectedProductContext,aem.frontend.all,read_pc.dma_aem_ams"
+
+  [local_server.secret_stores]
+    [[local_server.secret_stores.secret_default]]
+      key = "INBOUND_API_KEY"
+      data = "LOCAL_ONLY_DEMO_API_KEY_CHANGE_BEFORE_REAL_USE_123456"
+    [[local_server.secret_stores.secret_default]]
+      key = "IMS_CLIENT_ID"
+      data = "LOCAL_NOT_CONFIGURED"
+    [[local_server.secret_stores.secret_default]]
+      key = "IMS_CLIENT_SECRET"
+      data = "LOCAL_NOT_CONFIGURED"

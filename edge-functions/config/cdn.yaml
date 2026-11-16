@@ -1,0 +1,23 @@
+kind: 'CDN'
+version: '1'
+data:
+  originSelectors:
+    rules:
+      - name: route-eds-sheet-api
+        when:
+          allOf:
+            - { reqProperty: domain, equals: "stage.example.com" }
+            - { reqProperty: path, equals: "/api/eds-sheets" }
+        action:
+          type: selectAemOrigin
+          originName: edgefunction-eds-sheet-service
+          skipCache: true
+      - name: route-eds-sheet-health
+        when:
+          allOf:
+            - { reqProperty: domain, equals: "stage.example.com" }
+            - { reqProperty: path, equals: "/api/eds-sheets/health" }
+        action:
+          type: selectAemOrigin
+          originName: edgefunction-eds-sheet-service
+          skipCache: true
