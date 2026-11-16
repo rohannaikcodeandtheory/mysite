@@ -1,0 +1,43 @@
+{
+  "assetID": "I-NA-BCKM-4109045",
+  "action": "created",
+  "netChange": false,
+  "createdDate": "2026-11-13T05:30:00.000Z",
+  "lastModificationDate": "2026-11-13T05:30:00.000Z",
+  "partNumbers": [
+    {
+      "operation": "A",
+      "partNumber": "410899",
+      "squashedPartNumber": "410899"
+    },
+    {
+      "operation": "B",
+      "partNumber": "410899",
+      "squashedPartNumber": "410899"
+    },
+    {
+      "operation": "C",
+      "partNumber": "410899",
+      "squashedPartNumber": "410899"
+    }
+  ],
+  "metadata": {
+    "resourceRegion": "NA",
+    "brandName": "Rancho",
+    "language": "de_DE",
+    "mediaGroupCode": "Spec Diagrams",
+    "mediaCode": "P04",
+    "title": "Installation diagram",
+    "fileName": "I-NA-BCKM-410899",
+    "partNumber": "410899",
+    "squashPartNumber": "410899",
+    "sortOrder": "1",
+    "orientationView": "Front",
+    "orientationViewCode": "FRO",
+    "piesAssetType": "Photo",
+    "piesAssetTypeCode": "P04",
+    "videoUrls": "",
+    "partDetailImageUrl": "https://s3.example.com/detail/410899.jpg",
+    "partListingImageUrl": "https://s3.example.com/listing/410899.jpg"
+  }
+}

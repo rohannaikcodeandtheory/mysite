@@ -7,7 +7,7 @@ export function createDaClient({ org, site, fetcher, getAccessToken }) {
     fail('INVALID_CONFIGURATION', 'DA_ORG or DA_SITE is invalid', 503);
   }
 
-  async function send(method, kind, path, body = undefined) {
+  async function send(method, kind, path, body = undefined, { allowConflict = false } = {}) {
     const url = `${DA_HOST}/${kind}/${org}/${site}/${path}`;
     let auth = await getAccessToken();
     async function requestWith(token) {
@@ -38,7 +38,7 @@ export function createDaClient({ org, site, fetcher, getAccessToken }) {
     if (response.status === 401 || response.status === 403) {
       fail('DA_AUTH_FAILED', `DA rejected the configured IMS identity (HTTP ${response.status})`, 502);
     }
-    if (!response.ok) {
+    if (!response.ok && !(allowConflict && response.status === 409)) {
       const status = response.status;
       if (status === 409) fail('DA_CONFLICT', 'DA reported a conflict', 409);
       fail('DA_REQUEST_FAILED', `DA ${method} failed (HTTP ${status})`, 502);
@@ -73,10 +73,13 @@ export function createDaClient({ org, site, fetcher, getAccessToken }) {
     return { httpStatus: response.status, payload };
   }
 
-  async function write(path, sheet) {
+  async function write(path, sheet, { existing = false } = {}) {
     const form = new FormData();
     form.append('data', new Blob([JSON.stringify(sheet)], { type: 'application/json' }), path.split('/').at(-1));
-    return responseDetails(await send('POST', 'source', path, form));
+    // Create missing sheets with POST; replace an existing sheet with PUT.
+    // DA has no atomic row append endpoint: callers must supply the FULL
+    // sheet, including all existing records, for this PUT operation.
+    return responseDetails(await send(existing ? 'PUT' : 'POST', 'source', path, form));
   }
 
   async function move(path, destinationPath) {
@@ -91,6 +94,7 @@ export function createDaClient({ org, site, fetcher, getAccessToken }) {
     write,
     move,
     remove: async (path) => responseDetails(await send('DELETE', 'source', path)),
-    createFolder: async (path) => responseDetails(await send('POST', 'source', path)),
+    // Folder POST is idempotent on DA when the folder already exists (often HTTP 409).
+    createFolder: async (path) => responseDetails(await send('POST', 'source', path, undefined, { allowConflict: true })),
   };
 }

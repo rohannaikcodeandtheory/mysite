@@ -1,0 +1,197 @@
+{
+  "info": {
+    "_postman_id": "4a149a9c-a06a-4514-a414-276f50ed9574",
+    "name": "DA Asset Events - language / brandName",
+    "description": "Raw action webhook to data/{metadata.language}/{metadata.brandName}.json. Keep IMS credentials only on server.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "60054223",
+    "_collection_link": "https://go.postman.co/collection/60054223-4a149a9c-a06a-4514-a414-276f50ed9574?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "00 - Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/eds-sheets/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "eds-sheets",
+            "health"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "01 - Raw created",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"assetID\": \"I-NA-BCKM-4109045\",\n  \"action\": \"created\",\n  \"netChange\": false,\n  \"createdDate\": \"2026-11-13T05:30:00.000Z\",\n  \"lastModificationDate\": \"2026-11-13T05:30:00.000Z\",\n  \"partNumbers\": [\n    {\n      \"operation\": \"A\",\n      \"partNumber\": \"410899\",\n      \"squashedPartNumber\": \"410899\"\n    },\n    {\n      \"operation\": \"B\",\n      \"partNumber\": \"410899\",\n      \"squashedPartNumber\": \"410899\"\n    },\n    {\n      \"operation\": \"C\",\n      \"partNumber\": \"410899\",\n      \"squashedPartNumber\": \"410899\"\n    }\n  ],\n  \"metadata\": {\n    \"resourceRegion\": \"NA\",\n    \"brandName\": \"Rancho\",\n    \"language\": \"de_DE\",\n    \"mediaGroupCode\": \"Spec Diagrams\",\n    \"mediaCode\": \"P04\",\n    \"title\": \"Installation diagram\",\n    \"fileName\": \"I-NA-BCKM-410899\",\n    \"partNumber\": \"410899\",\n    \"squashPartNumber\": \"410899\",\n    \"sortOrder\": \"1\",\n    \"orientationView\": \"Front\",\n    \"orientationViewCode\": \"FRO\",\n    \"piesAssetType\": \"Photo\",\n    \"piesAssetTypeCode\": \"P04\",\n    \"videoUrls\": \"\",\n    \"partDetailImageUrl\": \"https://s3.example.com/detail/410899.jpg\",\n    \"partListingImageUrl\": \"https://s3.example.com/listing/410899.jpg\"\n  }\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/eds-sheets",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "eds-sheets"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "02 - Raw updated",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"assetID\": \"I-NA-BCKM-4109045\",\n  \"action\": \"updated\",\n  \"netChange\": false,\n  \"createdDate\": \"2026-11-13T05:30:00.000Z\",\n  \"lastModificationDate\": \"2026-11-16T09:00:00.000Z\",\n  \"partNumbers\": [\n    {\n      \"operation\": \"A\",\n      \"partNumber\": \"410899\",\n      \"squashedPartNumber\": \"410899\"\n    },\n    {\n      \"operation\": \"B\",\n      \"partNumber\": \"410899\",\n      \"squashedPartNumber\": \"410899\"\n    },\n    {\n      \"operation\": \"C\",\n      \"partNumber\": \"410899\",\n      \"squashedPartNumber\": \"410899\"\n    }\n  ],\n  \"metadata\": {\n    \"resourceRegion\": \"NA\",\n    \"brandName\": \"Rancho\",\n    \"language\": \"de_DE\",\n    \"mediaGroupCode\": \"Spec Diagrams\",\n    \"mediaCode\": \"P04\",\n    \"title\": \"Updated installation diagram\",\n    \"fileName\": \"I-NA-BCKM-410899\",\n    \"partNumber\": \"410899\",\n    \"squashPartNumber\": \"410899\",\n    \"sortOrder\": \"1\",\n    \"orientationView\": \"Front\",\n    \"orientationViewCode\": \"FRO\",\n    \"piesAssetType\": \"Photo\",\n    \"piesAssetTypeCode\": \"P04\",\n    \"videoUrls\": \"\",\n    \"partDetailImageUrl\": \"https://s3.example.com/detail/410899.jpg\",\n    \"partListingImageUrl\": \"https://s3.example.com/listing/410899.jpg\"\n  }\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/eds-sheets",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "eds-sheets"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "03 - Raw deleted",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"assetID\": \"I-NA-BCKM-4109045\",\n  \"action\": \"deleted\",\n  \"metadata\": {\n    \"language\": \"de_DE\",\n    \"brandName\": \"Rancho\"\n  }\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/eds-sheets",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "eds-sheets"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "04 - Raw moved",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"assetID\": \"I-NA-BCKM-4109045\",\n  \"action\": \"moved\",\n  \"previousLocation\": {\n    \"language\": \"de_DE\",\n    \"brandName\": \"Rancho\"\n  },\n  \"metadata\": {\n    \"language\": \"fr_FR\",\n    \"brandName\": \"Monroe\"\n  }\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/eds-sheets",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "eds-sheets"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:7676"
+    },
+    {
+      "key": "apiKey",
+      "value": "REPLACE_WITH_INBOUND_API_KEY"
+    }
+  ]
+}

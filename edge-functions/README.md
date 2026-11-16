@@ -1,3 +1,9 @@
+# NEW: Raw action events with automatic `language/brandName` routing
+
+See **[RAW-ACTION-INTEGRATION.md](RAW-ACTION-INTEGRATION.md)** and the new `postman/DA-Raw-Asset-Events.postman_collection.json`. The full nested payload can be sent directly with `action`. Brand sheets are written to `data/{language}/{brandName}.json`; existing `operation` format still works. **Multi-instance concurrent writes are not safe without external serialization.**
+
+---
+
 # DA EDS Sheet Service — Local + Stage + Production
 
 **Architecture:** Postman/service → protected AEM Edge Function → Adobe IMS client_credentials → DA Source / Move API → JSON sheet.
@@ -63,7 +69,7 @@ Example:
 
 Supported operations: `createFolder` (folder path like `data/testing`), `createSheet`, `getSheet`, `updateSheet` (whole-file replace), `moveSheet` (DA Move API, `destinationPath` and `confirm: true`), `deleteSheet` (`confirm: true`). Only `.json` under `data/` is allowed. Limit: 256 KiB inbound, 1000 rows, 200 flattened columns.
 
-IMPORTANT: The current service DOES NOT implement event-level append/update/delete by `assetID`; a raw `{ "action": "created", ... }` JSON event alone is not accepted as an API operation. Do not confuse sheet CRUD with row CRUD. Add a separate, idempotent event handler before connecting production bulk feeds.
+IMPORTANT: Raw event-level `action` (`create`, `updated`, `deleted`, `moved` (`created` is accepted as an alias)) is supported with `metadata.language` and `metadata.brandName` to derive a brand-sheet path. See `RAW-ACTION-INTEGRATION.md`. Multiple edge instances require a durable per-sheet queue to prevent lost updates. Add a separate, idempotent event handler before connecting production bulk feeds.
 
 ## D. Status/errors
 

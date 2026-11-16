@@ -6,7 +6,7 @@
   "description": "Secure CRUD service for DA-backed EDS sheets on AEM Edge Functions",
   "scripts": {
     "test": "node --test test/*.test.js",
-    "check": "node --check src/index.js && node --check src/local-server.js && node --check src/runtime-settings.js && node --check src/handler.js && node --check src/da.js && node --check src/sheet.js && node --check src/ims.js && node --check src/errors.js",
+    "check": "node --check src/index.js && node --check src/local-server.js && node --check src/runtime-settings.js && node --check src/handler.js && node --check src/da.js && node --check src/sheet.js && node --check src/ims.js && node --check src/errors.js && node --check src/event.js",
     "build": "aio aem edge-functions build",
     "serve": "aio aem edge-functions serve",
     "deploy": "aio aem edge-functions deploy eds-sheet-service",

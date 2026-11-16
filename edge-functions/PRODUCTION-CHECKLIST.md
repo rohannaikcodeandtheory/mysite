@@ -12,3 +12,7 @@
 - [ ] Sheet mutation concurrency/race behavior reviewed. If multiple updates per asset are expected, develop idempotent per-asset event processing before production.
 - [ ] DA permissions are least-privilege; backup/recovery strategy for sheet deletion and move has been approved.
 - [ ] Main deployment approved; no read-only 200 is treated as write proof.
+
+- [ ] Raw `action` inputs validated against derived `data/{language}/{brandName}.json` routing; check brand naming convention and folder ACL.
+- [ ] Implement durable per-sheet serialization/queue for parallel webhook ingestion across edge instances/POPs, or formally constrain traffic to a single writer.
+- [ ] Move partial-failure recovery procedure tested (two-sheet move is not atomic).

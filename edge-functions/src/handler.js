@@ -4,6 +4,7 @@ import {
 } from './sheet.js';
 import { createTokenProvider } from './ims.js';
 import { createDaClient } from './da.js';
+import { applyAssetEvent, validateAssetEvent } from './event.js';
 
 const API_PATH = '/api/eds-sheets';
 const OPERATIONS = new Set([
@@ -67,7 +68,11 @@ async function parseRequest(req) {
     fail('INVALID_JSON', 'Request body must be a JSON object');
   }
   if (!OPERATIONS.has(payload.operation)) {
-    fail('INVALID_OPERATION', 'Choose createSheet, getSheet, updateSheet, deleteSheet, moveSheet, or createFolder');
+    if (typeof payload.action === 'string') {
+      validateAssetEvent(payload);
+      return payload;
+    }
+    fail('INVALID_OPERATION', 'Use action: create, updated, deleted, moved; or a legacy operation');
   }
   if (payload.dryRun !== undefined && typeof payload.dryRun !== 'boolean') {
     fail('INVALID_DRY_RUN', 'dryRun must be true or false');
@@ -114,7 +119,7 @@ async function execute(payload, da) {
     }
     case 'updateSheet': {
       if (!(await da.read(path))) fail('NOT_FOUND', 'Sheet does not exist; use createSheet', 404);
-      const result = await da.write(path, sheet);
+      const result = await da.write(path, sheet, { existing: true });
       return { success: true, operation, path, rows: sheet.total, da: result.payload };
     }
     case 'deleteSheet': {
@@ -142,6 +147,14 @@ export function createHandler({ getSecret, fetcher, settings }) {
   const getAccessToken = createTokenProvider({ getSecret, fetcher, scopes: settings.scopes });
   // The DA client is fixed to a configured repository, never a client-provided org/site/URL.
   const da = createDaClient({ org: settings.org, site: settings.site, fetcher, getAccessToken });
+  // Serialize raw webhook operations within one warm instance. This does NOT
+  // prevent simultaneous updates from different edge instances/POPs.
+  let localQueue = Promise.resolve();
+  function queuedAssetEvent(payload) {
+    const job = localQueue.then(() => applyAssetEvent(payload, da));
+    localQueue = job.catch(() => {});
+    return job;
+  }
   return async function handle(req) {
     try {
       const url = new URL(req.url);
@@ -160,7 +173,9 @@ export function createHandler({ getSecret, fetcher, settings }) {
         fail('UNAUTHORIZED', 'Invalid API key', 401);
       }
       const payload = await parseRequest(req);
-      const result = await execute(payload, da);
+      const result = payload.action && !payload.operation
+        ? await queuedAssetEvent(payload)
+        : await execute(payload, da);
       return jsonResponse(result, 200);
     } catch (error) {
       const safe = toSafeError(error);

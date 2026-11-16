@@ -30,11 +30,11 @@ function fixture(initial = {}) {
         ? new Response(JSON.stringify(storage.get(path)), { status: 200 })
         : new Response('', { status: 404 });
     }
-    if (options.method === 'POST') {
+    if (options.method === 'POST' || options.method === 'PUT') {
       if (options.body instanceof FormData) {
         storage.set(path, JSON.parse(await options.body.get('data').text()));
       }
-      return new Response(JSON.stringify({ source: { editUrl: 'https://da.live/edit#/mock' } }), { status: 201 });
+      return new Response(JSON.stringify({ source: { editUrl: 'https://da.live/edit#/mock' } }), { status: options.method === 'PUT' ? 200 : 201 });
     }
     if (options.method === 'DELETE') {
       storage.delete(path);
