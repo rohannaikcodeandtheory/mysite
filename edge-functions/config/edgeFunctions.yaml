@@ -20,9 +20,9 @@ data:
     - key: DA_SITE_MAIN
       value: "mysite" # verify production site
     - key: IMS_SCOPES_STAGE
-      value: "oopenid,AdobeID,read_organizations,additional_info.projectedProductContext,read_pc.dma_aem_ams"
+      value: "openid,AdobeID,read_organizations,additional_info.projectedProductContext,read_pc.dma_aem_ams"
     - key: IMS_SCOPES_MAIN
-      value: "oopenid,AdobeID,read_organizations,additional_info.projectedProductContext,read_pc.dma_aem_ams"
+      value: "openid,AdobeID,read_organizations,additional_info.projectedProductContext,read_pc.dma_aem_ams"
   secrets:
     - key: INBOUND_API_KEY_STAGE
       value: ${{MYSITE_STAGE_INBOUND_API_KEY}}

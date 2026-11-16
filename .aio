@@ -1,0 +1,12 @@
+{
+  cloudmanager_orgid: "6ED976C95CFFA6810A495C73@AdobeOrg",
+  cloudmanager_programid: "99508",
+  edgefunctions_edge_delivery: true,
+  edgefunctions_site_domain: "desertwolveslasvegas.com",
+  edgefunctions_adc_orgid: "235943",
+  edgefunctions_adc_configured: true,
+  edgefunctions_adc_projectid: "4566206088345797939",
+  edgefunctions_adc_workspaceid: "4566206088345849292",
+  edgefunctions_adc_client_id: "b5144dc5be094aa794231acc7988e58b",
+  edgefunctions_adc_scopes: "openid,AdobeID,read_organizations,additional_info.projectedProductContext,read_pc.dma_aem_ams"
+}
