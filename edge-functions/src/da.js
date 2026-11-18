@@ -76,7 +76,7 @@ export function createDaClient({ org, site, fetcher, getAccessToken }) {
   async function write(path, sheet, { existing = false } = {}) {
     const form = new FormData();
     form.append('data', new Blob([JSON.stringify(sheet)], { type: 'application/json' }), path.split('/').at(-1));
-    // Create missing sheets with POST; replace an existing sheet with PUT.
+    // Create missing sheets with POST; replace an existing sheet with PUT..
     // DA has no atomic row append endpoint: callers must supply the FULL
     // sheet, including all existing records, for this PUT operation.
     return responseDetails(await send(existing ? 'PUT' : 'POST', 'source', path, form));

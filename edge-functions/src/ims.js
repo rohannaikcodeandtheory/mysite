@@ -3,7 +3,7 @@ import { fail } from './errors.js';
 const TOKEN_ENDPOINT = 'https://ims-na1.adobelogin.com/ims/token/v3';
 
 export function createTokenProvider({ getSecret, fetcher, scopes }) {
-  // Instance-local cache; expiry is based on the granted token lifetime.
+  // Instance-local cache; expiry is based on the granted token lifetime...
   let token = null;
   let validUntil = 0;
   let pending = null;
